@@ -1,0 +1,11 @@
+import { MoviesController } from "../controllers/movies.controller.js";
+import { MovieService } from "../services/movies.service.js";
+import { Router } from "express";
+const router = Router();
+const movieService = new MovieService();
+const movieController = new MoviesController(movieService);
+router.get("/", movieController.getAllMovies);
+router.get("/:id", movieController.getById);
+router.delete("/:id", movieController.deleteMovie);
+
+export default router;
