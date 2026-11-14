@@ -22,6 +22,23 @@ export class MoviesController {
     };
     res.json(await this.movieService.findAll(filters));
   };
+  createMovie = async (req: Request, res: Response) => {
+    const { title, imdb_id, genre, year } = req.body ?? {};
+    if (
+      typeof title === "string" &&
+      title !== "" &&
+      typeof imdb_id === "string" &&
+      imdb_id !== "" &&
+      typeof genre === "string" &&
+      genre !== "" &&
+      typeof year === "number"
+    ) {
+      const payload = { title, genre, imdb_id, year };
+      res.json(await this.movieService.create(payload));
+    }
+    res.status(400).json("title ,imdb_id,genre and year is required! ");
+  };
+
   deleteMovie = (req: Request, res: Response) => {
     const removed = this.movieService.remove(Number(req.params.id));
     if (!removed) {

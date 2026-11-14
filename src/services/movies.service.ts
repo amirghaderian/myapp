@@ -1,14 +1,23 @@
-import { Imovie, MovieFilters } from "../types/movies.js";
 import { db } from "../db.js";
+import { Movie } from "../models/movies.js";
+export interface MovieFilters {
+  year?: number;
+  title?: string;
+  sort?: "year" | "id";
+  limit?: number;
+}
+export interface MovieInput {
+  title: string;
+  imdb_id: string;
+  genre: string;
+  year: number;
+}
 export class MovieService {
-  private movies: Imovie[] = [
-    { id: 1, title: "Inception", year: 2010 },
-    { id: 2, title: "Fight Club", year: 1999 },
-    { id: 3, title: "Interstellar", year: 2014 },
-  ];
-  async findAll(filters: MovieFilters): Promise<Imovie[]> {
+  private movies: Movie[] = [];
+  async findAll(filters: MovieFilters): Promise<Movie[]> {
     let result = this.movies;
-    const query = await db("movies").select("*");
+    const query = Movie.query();
+    console.log(query);
     if (filters.title) {
       const search = filters.title.toLowerCase();
       result = result.filter((movie) =>
@@ -41,5 +50,21 @@ export class MovieService {
     }
     this.movies.splice(removeIndex, 1);
     return true;
+  }
+  async create(data: MovieInput): Promise<Movie | null> {
+    const duplicate = await Movie.query()
+      .where("imdb_id", data.imdb_id)
+      .orWhere({ title: data.title, year: data.year })
+      .first();
+
+    if (duplicate) {
+      return null;
+    }
+
+    return await Movie.query().insert(data);
+  }
+
+  async update(id: number, data: MovieInput): Promise<Movie | undefined> {
+    return await Movie.query().patchAndFetchById(id, data);
   }
 }

@@ -7,5 +7,5 @@ const movieController = new MoviesController(movieService);
 router.get("/", movieController.getAllMovies);
 router.get("/:id", movieController.getById);
 router.delete("/:id", movieController.deleteMovie);
-
+router.post("/", movieController.createMovie);
 export default router;
