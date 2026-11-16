@@ -1,11 +1,27 @@
 import { Request, Response } from "express";
-import { MovieService } from "../services/movies.service.js";
-import { MovieFilters } from "../types/movies.js";
+import { MovieFilters, MovieService } from "../services/movies.service.js";
+import { type MovieInput } from "../services/movies.service.js";
+import { toNumber, toText } from "../utils/parsers.js";
 
+function parseMovieInput(body: unknown): MovieInput | null {
+  const { title, imdb_id, genre, year } = (body ?? {}) as Record<
+    string,
+    unknown
+  >;
+
+  const cleanTitle = toText(title);
+  const cleanImdbId = toText(imdb_id);
+  const cleanGenre = toText(genre);
+  if (!cleanTitle || !cleanImdbId || !cleanGenre || typeof year !== "number") {
+    return null;
+  }
+
+  return { title: cleanTitle, imdb_id: cleanImdbId, genre: cleanGenre, year };
+}
 export class MoviesController {
   constructor(private movieService: MovieService) {}
-  getById = (req: Request, res: Response) => {
-    const movie = this.movieService.findById(Number(req.params.id));
+  getById = async (req: Request, res: Response) => {
+    const movie = await this.movieService.findById(Number(req.params.id));
     if (movie) {
       res.json(movie);
     } else {
@@ -15,32 +31,48 @@ export class MoviesController {
   getAllMovies = async (req: Request, res: Response) => {
     const { year, title, sort, limit } = req.query;
     const filters: MovieFilters = {
-      year: year !== undefined ? Number(year) : undefined,
-      title: title !== undefined ? String(title) : undefined,
+      year: toNumber(year),
+      title: toText(title),
       sort: sort === "year" || sort === "id" ? sort : undefined,
-      limit: limit !== undefined ? Number(limit) : undefined,
+      limit: toNumber(limit),
     };
     res.json(await this.movieService.findAll(filters));
   };
   createMovie = async (req: Request, res: Response) => {
-    const { title, imdb_id, genre, year } = req.body ?? {};
-    if (
-      typeof title === "string" &&
-      title !== "" &&
-      typeof imdb_id === "string" &&
-      imdb_id !== "" &&
-      typeof genre === "string" &&
-      genre !== "" &&
-      typeof year === "number"
-    ) {
-      const payload = { title, genre, imdb_id, year };
-      res.json(await this.movieService.create(payload));
+    const input = parseMovieInput(req.body);
+    if (!input) {
+      res.status(400).json({
+        message:
+          "title, imdb_id, genre (string) and year (number) are required",
+      });
+      return;
     }
-    res.status(400).json("title ,imdb_id,genre and year is required! ");
+    const movie = await this.movieService.create(input);
+    if (!movie) {
+      res.status(409).json({ message: "This movie already exists" });
+      return;
+    }
+    res.status(201).json(movie);
   };
-
-  deleteMovie = (req: Request, res: Response) => {
-    const removed = this.movieService.remove(Number(req.params.id));
+  updateMovie = async (req: Request, res: Response) => {
+    const input = parseMovieInput(req.body);
+    if (!input) {
+      res.status(400).json({
+        message:
+          "title, imdb_id, genre (string) and year (number) are required",
+      });
+      return;
+    }
+    const movie = await this.movieService.update(Number(req.params.id), input);
+    if (!movie) {
+      res.status(404).json({ message: "Movie not found" });
+      return;
+    }
+    res.json(movie);
+  };
+  deleteMovie = async (req: Request, res: Response) => {
+    console.log(req.params);
+    const removed = await this.movieService.remove(Number(req.params.id));
     if (!removed) {
       res.status(404).json({ message: "Movie not found!" });
       return;

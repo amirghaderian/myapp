@@ -1,4 +1,3 @@
-import { db } from "../db.js";
 import { Movie } from "../models/movies.js";
 export interface MovieFilters {
   year?: number;
@@ -13,44 +12,28 @@ export interface MovieInput {
   year: number;
 }
 export class MovieService {
-  private movies: Movie[] = [];
-  async findAll(filters: MovieFilters): Promise<Movie[]> {
-    let result = this.movies;
+  async findAll(filters: MovieFilters = {}): Promise<Movie[]> {
     const query = Movie.query();
-    console.log(query);
+
     if (filters.title) {
-      const search = filters.title.toLowerCase();
-      result = result.filter((movie) =>
-        movie.title.toLowerCase().includes(search),
-      );
+      query.where("title", "ilike", `%${filters.title}%`);
     }
-    if (filters.year) {
-      result = result.filter((movie) => movie.year === filters.year);
+    if (filters.year !== undefined) {
+      query.where("year", filters.year);
     }
     if (filters.sort) {
-      if (filters.sort === "year") {
-        result = [...result].sort((a, b) => a.year - b.year);
-      }
-      if (filters.sort === "id") {
-        result = [...result].sort((a, b) => a.id - b.id);
-      }
+      query.orderBy(filters.sort);
     }
     if (filters.limit !== undefined) {
-      result = result.slice(0, filters.limit);
+      query.limit(filters.limit);
     }
-    return query;
+    return await query;
   }
-  findById(id: number): Imovie | undefined {
-    return this.movies.find((movie) => movie.id === id);
+
+  async findById(id: number): Promise<Movie | undefined> {
+    return await Movie.query().findById(id);
   }
-  remove(id: number): boolean {
-    const removeIndex = this.movies.findIndex((movie) => movie.id === id);
-    if (removeIndex === -1) {
-      return false;
-    }
-    this.movies.splice(removeIndex, 1);
-    return true;
-  }
+
   async create(data: MovieInput): Promise<Movie | null> {
     const duplicate = await Movie.query()
       .where("imdb_id", data.imdb_id)
@@ -60,11 +43,15 @@ export class MovieService {
     if (duplicate) {
       return null;
     }
-
     return await Movie.query().insert(data);
   }
 
   async update(id: number, data: MovieInput): Promise<Movie | undefined> {
     return await Movie.query().patchAndFetchById(id, data);
+  }
+
+  async remove(id: number): Promise<boolean> {
+    const deletedCount = await Movie.query().deleteById(id);
+    return deletedCount > 0;
   }
 }
