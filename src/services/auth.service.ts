@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { User } from "../models/users.js";
+import { User } from "../models/user.model.js";
 
 export const PHONE_REGEX = /^09\d{9}$/;
 

@@ -1,7 +1,6 @@
-import { Request, Response } from "express";
-import { MovieFilters, MovieService } from "../services/movies.service.js";
-import { type MovieInput } from "../services/movies.service.js";
-import { toNumber, toText } from "../utils/parsers.js";
+import type { Request, Response } from "express";
+import { MoviesService, type MovieFilters, type MovieInput } from "../services/movies.service.js";
+import { toNonEmptyString, toNumber } from "../utils/parsers.js";
 
 function parseMovieInput(body: unknown): MovieInput | null {
   const { title, imdb_id, genre, year } = (body ?? {}) as Record<
@@ -9,9 +8,9 @@ function parseMovieInput(body: unknown): MovieInput | null {
     unknown
   >;
 
-  const cleanTitle = toText(title);
-  const cleanImdbId = toText(imdb_id);
-  const cleanGenre = toText(genre);
+  const cleanTitle = toNonEmptyString(title);
+  const cleanImdbId = toNonEmptyString(imdb_id);
+  const cleanGenre = toNonEmptyString(genre);
   if (!cleanTitle || !cleanImdbId || !cleanGenre || typeof year !== "number") {
     return null;
   }
@@ -19,62 +18,61 @@ function parseMovieInput(body: unknown): MovieInput | null {
   return { title: cleanTitle, imdb_id: cleanImdbId, genre: cleanGenre, year };
 }
 export class MoviesController {
-  constructor(private movieService: MovieService) {}
+  constructor(private moviesService: MoviesService) {}
   getById = async (req: Request, res: Response) => {
-    const movie = await this.movieService.findById(Number(req.params.id));
+    const movie = await this.moviesService.findById(Number(req.params.id));
     if (movie) {
       res.json(movie);
     } else {
-      res.status(404).json({ message: "Movie not found!" });
+      res.status(404).json({ message: "Movie not found" });
     }
   };
-  getAllMovies = async (req: Request, res: Response) => {
+  getAll = async (req: Request, res: Response) => {
     const { year, title, sort, limit } = req.query;
     const filters: MovieFilters = {
       year: toNumber(year),
-      title: toText(title),
+      title: toNonEmptyString(title),
       sort: sort === "year" || sort === "id" ? sort : undefined,
       limit: toNumber(limit),
     };
-    res.json(await this.movieService.findAll(filters));
+    res.json(await this.moviesService.findAll(filters));
   };
-  createMovie = async (req: Request, res: Response) => {
+  create = async (req: Request, res: Response) => {
     const input = parseMovieInput(req.body);
     if (!input) {
       res.status(400).json({
         message:
-          "title, imdb_id, genre (string) and year (number) are required",
+          "Title, imdb_id, genre (string) and year (number) are required",
       });
       return;
     }
-    const movie = await this.movieService.create(input);
+    const movie = await this.moviesService.create(input);
     if (!movie) {
       res.status(409).json({ message: "This movie already exists" });
       return;
     }
     res.status(201).json(movie);
   };
-  updateMovie = async (req: Request, res: Response) => {
+  update = async (req: Request, res: Response) => {
     const input = parseMovieInput(req.body);
     if (!input) {
       res.status(400).json({
         message:
-          "title, imdb_id, genre (string) and year (number) are required",
+          "Title, imdb_id, genre (string) and year (number) are required",
       });
       return;
     }
-    const movie = await this.movieService.update(Number(req.params.id), input);
+    const movie = await this.moviesService.update(Number(req.params.id), input);
     if (!movie) {
       res.status(404).json({ message: "Movie not found" });
       return;
     }
     res.json(movie);
   };
-  deleteMovie = async (req: Request, res: Response) => {
-    console.log(req.params);
-    const removed = await this.movieService.remove(Number(req.params.id));
+  remove = async (req: Request, res: Response) => {
+    const removed = await this.moviesService.remove(Number(req.params.id));
     if (!removed) {
-      res.status(404).json({ message: "Movie not found!" });
+      res.status(404).json({ message: "Movie not found" });
       return;
     }
     res.status(204).end();

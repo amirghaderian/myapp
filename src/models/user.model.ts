@@ -12,7 +12,6 @@ export class User extends Model {
 
   $formatJson(json: Pojo): Pojo {
     const result = super.$formatJson(json);
-    console.log(result);
     delete result.password;
     return result;
   }

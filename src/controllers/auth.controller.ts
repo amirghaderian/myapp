@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { AuthService, PHONE_REGEX } from "../services/auth.service.js";
 import { signToken } from "../utils/jwt.js";
-import { toText } from "../utils/parsers.js";
+import { toNonEmptyString } from "../utils/parsers.js";
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -16,32 +16,32 @@ export class AuthController {
     const { username, password, phone, name, last_name } = req.body ?? {};
 
     if (typeof username !== "string" || username.trim() === "") {
-      res.status(400).json({ message: "username is required" });
+      res.status(400).json({ message: "Username is required" });
       return;
     }
     if (PHONE_REGEX.test(username.trim())) {
-      res.status(400).json({ message: "username cannot be a phone number" });
+      res.status(400).json({ message: "Username cannot be a phone number" });
       return;
     }
     if (typeof password !== "string" || password.length < 6) {
       res
         .status(400)
-        .json({ message: "password must be at least than 6 characters" });
+        .json({ message: "Password must be at least 6 characters" });
       return;
     }
     if (
       phone !== undefined &&
       (typeof phone !== "string" || !PHONE_REGEX.test(phone))
     ) {
-      res.status(400).json({ message: "phone must look like 09123456789" });
+      res.status(400).json({ message: "Phone must look like 09123456789" });
       return;
     }
     const result = await this.authService.register({
       username: username.trim(),
       password,
       phone,
-      name: toText(name),
-      last_name: toText(last_name),
+      name: toNonEmptyString(name),
+      last_name: toNonEmptyString(last_name),
     });
 
     if (!result.ok) {
@@ -59,13 +59,13 @@ export class AuthController {
   login = async (req: Request, res: Response) => {
     const { identifier, password } = req.body ?? {};
 
-    if (!toText(identifier) || !toText(password)) {
-      res.status(400).json({ message: "identifier and password are required" });
+    if (!toNonEmptyString(identifier) || !toNonEmptyString(password)) {
+      res.status(400).json({ message: "Identifier and password are required" });
       return;
     }
     const user = await this.authService.login(identifier.trim(), password);
     if (!user) {
-      res.status(401).json({ message: "invalid username/phone or password" });
+      res.status(401).json({ message: "Invalid username/phone or password" });
       return;
     }
 

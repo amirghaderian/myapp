@@ -1,4 +1,4 @@
-import { Movie } from "../models/movies.js";
+import { Movie } from "../models/movie.model.js";
 export interface MovieFilters {
   year?: number;
   title?: string;
@@ -11,7 +11,7 @@ export interface MovieInput {
   genre: string;
   year: number;
 }
-export class MovieService {
+export class MoviesService {
   async findAll(filters: MovieFilters = {}): Promise<Movie[]> {
     const query = Movie.query();
 
