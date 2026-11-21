@@ -3,7 +3,7 @@ import { User } from "../models/user.model.js";
 import { UserMovie } from "../models/user_movie.js";
 interface IInput {
   user_id: number;
-  movies_id: number;
+  movie_id: number;
   review: string;
   is_favorite: boolean;
 }
@@ -17,23 +17,26 @@ export class UserMoviesService {
     }
     return await query;
   }
-  async addMovie(data: IInput): Promise<UserMovie | { ok: boolean, result: string }> {
+  async addMovie(
+    data: IInput,
+  ): Promise<UserMovie | { ok: boolean; result: string }> {
     const query = UserMovie.query();
-    const findMoviesQuery = await Movie.query()
-      .findById(data.movies_id)
-      .first();
-    const FindUsersQuery = await User.query().findById(data.movies_id).first();
 
-    if (findMoviesQuery) {
+    const findMoviesQuery = await Movie.query().findById(data.movie_id).first();
+    const FindUsersQuery = await User.query().findById(data.user_id).first();
+    if (!findMoviesQuery) {
       return { ok: false, result: "the movie_id isnt exist" };
     }
-    if (FindUsersQuery) {
+    if (!FindUsersQuery) {
       return { ok: false, result: "the user_id isnt exist" };
     }
-    const duplicated = await query
-      .where([{ user_id: data.user_id }, { movie_id: data.movies_id }])
+    const duplicate = await query
+      .where("user_id", data.user_id)
+      .where("movie_id", data.movie_id)
       .first();
-
-    return duplicated ? duplicated : await query.insert(data);
+    if (duplicate) {
+      return { ok: false, result: "This user already has this movie" };
+    }
+    return duplicate ? duplicate : await query.insert(data);
   }
 }
