@@ -18,7 +18,7 @@ app.get("/", (_req, res) => {
 app.use("/docs", docsRoutes);
 app.use("/auth", authRoutes);
 app.use("/movies", requireAuth, moviesRoutes);
-app.use("/userMovies", userMoviesRoutes);
+app.use("/user_movies", requireAuth, userMoviesRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

@@ -6,4 +6,6 @@ const userMoviesService = new UserMoviesService();
 const userMoviesController = new UserMoviesController(userMoviesService);
 
 router.get("/", userMoviesController.myMovies);
+router.post("/", userMoviesController.addMovie);
+
 export default router;
